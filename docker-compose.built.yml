@@ -96,7 +96,6 @@ services:
       - ./elk-certs:$ELK_CERTS_DIR
     ports:
       - "127.0.0.1:5602:5601"
-    restart: always
     container_name: "darkweb-search-engine-kibana"
 
   db:
