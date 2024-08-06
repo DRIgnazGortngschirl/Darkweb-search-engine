@@ -97,7 +97,7 @@ thinc==8.0.13
 threadpoolctl==2.1.0
 timeout-decorator==0.4.1
 tqdm==4.61.2
-Twisted==20.3.0
+Twisted
 typer==0.4.0
 typing_extensions==4.0.1
 urllib3==1.26.2
