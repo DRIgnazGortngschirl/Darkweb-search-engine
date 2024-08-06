@@ -55,8 +55,8 @@ Update the list of onion addresses you want to set as the crawler seed in ```oni
 
 Build docker images involved in docker-compose.
 
-    docker-compose build
-    docker-compose up -d
+    docker compose build
+    docker compose up -d
 
 Build and run the scraper.
 
