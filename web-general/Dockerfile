@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.8.19
 
 # os setup
 RUN apt-get update && apt-get -y install \
