@@ -6,6 +6,10 @@ services:
   elasticsearch1:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION}
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
     environment:
      - cluster.name=docker-cluster
      - node.name=elasticsearch1
@@ -42,6 +46,10 @@ services:
   elasticsearch2:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION}
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
     environment:
      - cluster.name=docker-cluster
      - node.name=elasticsearch2
@@ -78,6 +86,10 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:${ELK_VERSION}
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
     environment:
      - ELASTICSEARCH_URL=http://elasticsearch1:9200
      - ELASTICSEARCH_HOSTS=http://elasticsearch1:9200
@@ -101,6 +113,10 @@ services:
   db:
     image: dapperblondie/darkweb-search-engine-db
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
     ports:
       - "127.0.0.1:3307:3306"
     volumes:
@@ -168,6 +184,10 @@ services:
     
   tor-privoxy-web:
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
     image: dapperblondie/darkweb-search-engine-tor-privoxy-web
     ports:
       # - "9050:9050" # Tor proxy
