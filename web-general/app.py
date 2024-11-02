@@ -56,18 +56,9 @@ app.jinja_env.globals.update(count_webcomponent=helpers.count_webcomponent)
 
 app.secret_key = bytes(os.environ['FLASK_SECRET'], "utf-8").decode("unicode_escape")
 BLACKLIST_AGENT = []
-# BLACKLIST_AGENT = [ 'Mozilla/5.0 (Windows NT x.y; rv:10.0) Gecko/20100101 Firefox/10.0']
-# BLACKLIST_AGENT = [ 'python-requests/2.18.1',
-#					'Mozilla/5.0 (Windows NT x.y; rv:10.0) Gecko/20100101 Firefox/10.0',
-#					'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
-#					'Go-http-client/1.1',
-#					'Scrapy/1.3.3 (+http://scrapy.org)',
-#					'Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Firefox/42.2']
-
 
 HOUR_SEC = 60 * 60
 HALF_AN_HOUR_SEC = HOUR_SEC / 2
-
 
 @app.before_request
 def setup_session():
@@ -88,19 +79,18 @@ def setup_session():
     if agent in BLACKLIST_AGENT or len(agent) < 15:
         g.request_log_id = 0
         return render_template('error.html', code=200,
-                               message="Layer 8 error. If you want my data, DON'T SCRAPE (too much cpu load), contact me and I will give it to you"), 200
+                             message="Layer 8 error. If you want my data, DON'T SCRAPE (too much cpu load), contact me and I will give it to you"), 200
 
     with db_session:
         req_log = RequestLog(uuid=session['uuid'],
-                             uuid_is_fresh=g.uuid_is_fresh,
-                             created_at=now,
-                             agent=agent,
-                             referrer=referrer,
-                             path=path,
-                             full_path=full_path)
+                           uuid_is_fresh=g.uuid_is_fresh,
+                           created_at=now,
+                           agent=agent,
+                           referrer=referrer,
+                           path=path,
+                           full_path=full_path)
         flush()
         g.request_log_id = req_log.id
-
 
 @app.context_processor
 def inject_elasticsearch():
@@ -479,16 +469,9 @@ def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico',
                                mimetype='image/vnd.microsoft.icon')
 
-
 @app.route('/robots.txt')
 def robots():
     return send_from_directory(os.path.join(app.root_path, 'static'), 'robots.txt')
-
-
-@app.route('/faq')
-def faq():
-    return render_template('faq.html')
-
 
 @app.route('/bot/<kind>')
 @db_session

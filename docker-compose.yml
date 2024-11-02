@@ -1,8 +1,6 @@
 #Containers' name can't contain _ (underscore) because scrapy is not able to handle it.
-version: '3.2'
 
 services:
-  
   elasticsearch1:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION}
     environment:
@@ -21,22 +19,28 @@ services:
     #  - xpack.security.http.ssl.key=$ELK_CERTS_DIR/elasticsearch1/elasticsearch1.key
     #  - xpack.security.http.ssl.certificate_authorities=$ELK_CERTS_DIR/ca/ca.crt
     #  - xpack.security.http.ssl.certificate=$ELK_CERTS_DIR/elasticsearch1/elasticsearch1.crt
-    #  - xpack.security.transport.ssl.enabled=true 
-    #  - xpack.security.transport.ssl.verification_mode=certificate 
+    #  - xpack.security.transport.ssl.enabled=true
+    #  - xpack.security.transport.ssl.verification_mode=certificate
     #  - xpack.security.transport.ssl.certificate_authorities=$ELK_CERTS_DIR/ca/ca.crt
     #  - xpack.security.transport.ssl.certificate=$ELK_CERTS_DIR/elasticsearch1/elasticsearch1.crt
     #  - xpack.security.transport.ssl.key=$ELK_CERTS_DIR/elasticsearch1/elasticsearch1.key
      - indices.query.bool.max_clause_count=10240
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
     volumes:
       - .data/elasticsearch1:/var/lib/elasticsearch/data
       - ./elk-certs:$ELK_CERTS_DIR
     ports:
-      - "127.0.0.1:9200:9200"
+      - "0.0.0.0:9200:9200"
     container_name: "darkweb-search-engine-elasticsearch1"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
+
 
   elasticsearch2:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION}
@@ -56,33 +60,38 @@ services:
     #  - xpack.security.http.ssl.key=$ELK_CERTS_DIR/elasticsearch2/elasticsearch2.key
     #  - xpack.security.http.ssl.certificate_authorities=$ELK_CERTS_DIR/ca/ca.crt
     #  - xpack.security.http.ssl.certificate=$ELK_CERTS_DIR/elasticsearch2/elasticsearch2.crt
-    #  - xpack.security.transport.ssl.enabled=true 
-    #  - xpack.security.transport.ssl.verification_mode=certificate 
+    #  - xpack.security.transport.ssl.enabled=true
+    #  - xpack.security.transport.ssl.verification_mode=certificate
     #  - xpack.security.transport.ssl.certificate_authorities=$ELK_CERTS_DIR/ca/ca.crt
     #  - xpack.security.transport.ssl.certificate=$ELK_CERTS_DIR/elasticsearch2/elasticsearch2.crt
     #  - xpack.security.transport.ssl.key=$ELK_CERTS_DIR/elasticsearch2/elasticsearch2.key
      - indices.query.bool.max_clause_count=10240
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
     volumes:
       - .data/elasticsearch2:/var/lib/elasticsearch/data
       - ./elk-certs:$ELK_CERTS_DIR
     # ports:
     #   - "127.0.0.1:9201:9200"
     container_name: "darkweb-search-engine-elasticsearch2"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
 
   kibana:
     image: docker.elastic.co/kibana/kibana:${ELK_VERSION}
     environment:
      - ELASTICSEARCH_URL=http://elasticsearch1:9200
      - ELASTICSEARCH_HOSTS=http://elasticsearch1:9200
-     - NODE_OPTIONS="--max-old-space-size=8192"  
-    #  - xpack.monitoring.ui.container.elasticsearch.enabled=true 
-    #  - xpack.security.transport.ssl.verification_mode=certificate  
-     - elasticsearch.requestTimeout=300000 
-     - elasticsearch.startupTimeout=500000  
+     - NODE_OPTIONS="--max-old-space-size=8192"
+    #  - xpack.monitoring.ui.container.elasticsearch.enabled=true
+    #  - xpack.security.transport.ssl.verification_mode=certificate
+     - elasticsearch.requestTimeout=300000
+     - elasticsearch.startupTimeout=500000
     #  - ELASTICSEARCH_USERNAME=
     #  - ELASTICSEARCH_PASSWORD=
     #  - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=$ELK_CERTS_DIR/ca/ca.crt
@@ -92,15 +101,22 @@ services:
     volumes:
       - ./elk-certs:$ELK_CERTS_DIR
     ports:
-      - "127.0.0.1:5601:5601"
+      - "0.0.0.0:5601:5601"
     restart: always
     container_name: "darkweb-search-engine-kibana"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
+
+
 
   web-general:
-    build: web-general
+    build: ./web-general
     restart: always
     ports:
-      - "127.0.0.1:7000:5000"
+      - "0.0.0.0:7000:5000"
     volumes:
       - ./etc:/opt/torscraper/etc:ro
       - ./scripts:/opt/torscraper/scripts:ro
@@ -110,15 +126,94 @@ services:
       - db
       - elasticsearch1
       - elasticsearch2
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=toruser
+      - MYSQL_PASSWORD=torpass
+      - MYSQL_DATABASE=tor
+      - DATABASE_POOL_SIZE=20
+      - DATABASE_POOL_RECYCLE=3600
+      - DATABASE_MAX_OVERFLOW=30
     container_name: "darkweb-search-engine-web-general"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
 
   db:
     build: db
     ports:
-      - "127.0.0.1:3307:3306"
+      - "0.0.0.0:3307:3306"
     volumes:
       - .data/mysqldb:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=tor
+      - MYSQL_USER=toruser
+      - MYSQL_PASSWORD=torpass
+      - MYSQL_ROOT_PASSWORD=rootpass
+    command:
+      - --max_allowed_packet=256M
+      - --wait_timeout=28800
+      - --interactive_timeout=28800
+      - --net_read_timeout=30
+      - --net_write_timeout=60
+      - --connect_timeout=10
+      - --max_connections=1000
+      - --skip-name-resolve
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     container_name: "darkweb-search-engine-db"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "toruser", "-ptorpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+
+
+
+
+
+#  web-general:
+#    build: ./web-general  # Path to the Dockerfile for web-general
+#    restart: always
+#    ports:
+#      - "0.0.0.0:7000:5000"
+#    volumes:
+#      - ./etc:/opt/torscraper/etc:ro
+#      - ./scripts:/opt/torscraper/scripts:ro
+#      - ./lib:/opt/torscraper/lib:ro
+#      - ./web-general:/opt/torscraper/web
+#    depends_on:
+#      - db
+#      - elasticsearch1
+#      - elasticsearch2
+#    container_name: "darkweb-search-engine-web-general"
+#    logging:
+#      driver: json-file
+#      options:
+#        max-size: 2000k
+#        max-file: '10'
+
+#  db:
+#    build: db
+#    ports:
+#      - "0.0.0.0:3307:3306"
+#    volumes:
+#      - .data/mysqldb:/var/lib/mysql
+#    container_name: "darkweb-search-engine-db"
+#    logging:
+#      driver: json-file
+#      options:
+#        max-size: 2000k
+#        max-file: '10'
 
 #   crawler:
 #     build: .
@@ -142,43 +237,93 @@ services:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy0"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy1:
     restart: always
     build: tor-privoxy-scraper
-    container_name: "darkweb-search-engine-tor-privoxy1" 
+    container_name: "darkweb-search-engine-tor-privoxy1"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy2:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy2"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy3:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy3"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy4:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy4"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy5:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy5"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy6:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy6"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy7:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy7"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy8:
     restart: always
     build: tor-privoxy-scraper
     container_name: "darkweb-search-engine-tor-privoxy8"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
   tor-privoxy9:
     restart: always
     build: tor-privoxy-scraper
-    container_name: "darkweb-search-engine-tor-privoxy9"   
-    
+    container_name: "darkweb-search-engine-tor-privoxy9"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
+
   tor-privoxy-web:
     restart: always
     build: onion_proxy
@@ -186,6 +331,11 @@ services:
       # - "9050:9050" # Tor proxy
       - "3100:8100" # Privoxy
     container_name: "darkweb-search-engine-tor-privoxy-web"
+    logging:
+      driver: json-file
+      options:
+        max-size: 2000k
+        max-file: '10'
 
 networks:
   default:
@@ -193,4 +343,3 @@ networks:
     ipam:
       config:
         - subnet: 172.16.57.0/24
-
